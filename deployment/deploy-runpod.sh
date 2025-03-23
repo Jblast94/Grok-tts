@@ -4,8 +4,8 @@
 set -e  # Exit on error
 
 # Configuration
-DOCKER_IMAGE="your-dockerhub-username/runpod-tts-service:latest"
-RUNPOD_API_KEY="${RUNPOD_API_KEY:-}"
+DOCKER_IMAGE="jimmynap/runpod-tts-service:latest"
+RUNPOD_API_KEY="${rpa_29RZZDDSA3TGMZWRNGR0WD5RGHGFF4Z6FOEPB52D1kea7r}"
 SERVICE_NAME="tts-service"
 
 # Check if Docker is installed
@@ -22,7 +22,7 @@ if ! command -v runpodctl &> /dev/null; then
 fi
 
 # Check for API key
-if [ -z "$RUNPOD_API_KEY" ]; then
+if [ -z "rpa_29RZZDDSA3TGMZWRNGR0WD5RGHGFF4Z6FOEPB52D1kea7r" ]; then
     echo "Error: RUNPOD_API_KEY environment variable is not set."
     echo "Please set it with: export RUNPOD_API_KEY=your-api-key"
     exit 1
