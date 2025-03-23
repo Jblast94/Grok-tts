@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  speech-agent:
+    build: ./speech-agent
+    ports:
+      - "80:8000"
+    environment:
+      - RUNPOD_API_ENDPOINT=${RUNPOD_API_ENDPOINT}
+      - RUNPOD_API_KEY=${RUNPOD_API_KEY}
+      - CACHE_EXPIRATION_SECONDS=${CACHE_EXPIRATION_SECONDS:-86400}
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./speech-agent/cache:/app/cache
+      - ./speech-agent/knowledge:/app/knowledge
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+
+  grok-tts:
+    build: .
+    image: ${DOCKER_HUB_USERNAME}/grok-tts:latest
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./models:/app/models
+    environment:
+      - PYTHONUNBUFFERED=1
+
+volumes:
+  redis-data:
