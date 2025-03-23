@@ -1,0 +1,7 @@
+flask==2.1.0
+gunicorn==20.1.0
+requests==2.27.1
+python-magic==0.4.27  # For file type detection
+python-dateutil==2.8.2  # For date handling
+prometheus-client==0.16.0  # For metrics
+redis==4.5.1  # For distributed caching

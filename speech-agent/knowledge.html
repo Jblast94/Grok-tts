@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Knowledge Base Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .panel {
+            flex: 1;
+            min-width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #results, #stats {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        .result-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .document-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .document-item {
+            padding: 8px;
+            margin-bottom: 5px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .tab-container {
+            margin-bottom: 20px;
+        }
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            color: #333;
+        }
+        .tab button:hover {
+            background-color: #ddd;
+        }
+        .tab button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+        }
+        .show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Knowledge Base Dashboard</h1>
+    
+    <div class="tab-container">
+        <div class="tab">
+            <button class="tablinks active" onclick="openTab(event, 'QueryTab')">Query Knowledge</button>
+            <button class="tablinks" onclick="openTab(event, 'DocumentTab')">Documents</button>
+            <button class="tablinks" onclick="openTab(event, 'AddTab')">Add Knowledge</button>
+        </div>
+        
+        <div id="QueryTab" class="tabcontent show">
+            <h2>Query Knowledge Base</h2>
+            <div class="form-group">
+                <label for="query">Search Query:</label>
+                <input type="text" id="query" placeholder="Enter your search query">
+            </div>
+            <button onclick="queryKnowledge()">Search</button>
+            
+            <div class="loading" id="queryLoading">Searching...</div>
+            <div id="results"></div>
+        </div>
+        
+        <div id="DocumentTab" class="tabcontent">
+            <h2>Document Management</h2>
+            <div class="panel">
+                <h3>Upload Document</h3>
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="document">Select Document:</label>
+                        <input type="file" id="document" name="file">
+                    </div>
+                    <button type="button" onclick="uploadDocument()">Upload</button>
+                </form>
+                <div class="loading" id="uploadLoading">Uploading...</div>
+            </div>
+            
+            <div class="panel">
+                <h3>Document List</h3>
+                <button onclick="refreshDocuments()">Refresh List</button>
+                <div class="loading" id="documentListLoading">Loading documents...</div>
+                <ul class="document-list" id="documentList"></ul>
+            </div>
+        </div>
+        
+        <div id="AddTab" class="tabcontent">
+            <h2>Add Knowledge</h2>
+            <div class="form-group">
+                <label for="knowledgeType">Type:</label>
+                <input type="text" id="knowledgeType" placeholder="e.g., fact, instruction, reference">
+            </div>
+            <div class="form-group">
+                <label for="knowledgeSummary">Summary:</label>
+                <input type="text" id="knowledgeSummary" placeholder="Brief summary of this knowledge">
+            </div>
+            <div class="form-group">
+                <label for="knowledgeContent">Content:</label>
+                <textarea id="knowledgeContent" rows="6" placeholder="Detailed knowledge content"></textarea>
+            </div>
+            <button onclick="addKnowledge()">Save Knowledge</button>
+            <div class="loading" id="addLoading">Saving...</div>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <h2>Knowledge Base Statistics</h2>
+        <button onclick="refreshStats()">Refresh Stats</button>
+        <div class="loading" id="statsLoading">Loading stats...</div>
+        <div id="stats"></div>
+    </div>
+    
+    <script>
+        // Tab functionality
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+        
+        // Query knowledge
+        async function queryKnowledge() {
+            const query = document.getElementById('query').value.trim();
+            if (!query) {
+                alert('Please enter a search query');
+                return;
+            }
+            
+            document.getElementById('queryLoading').style.display = 'block';
+            document.getElementById('results').innerHTML = '';
+            
+            try {
+                const response = await fetch('/knowledge/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    document.getElementById('results').innerHTML = `<p>Error: ${data.error}</p>`;
+                } else {
+                    displayResults(data.results);
+                }
+            } catch (error) {
+                document.getElementById('results').innerHTML = `<p>Error: ${error.message}</p>`;
+            } finally {
+                document.getElementById('queryLoading').style.display = 'none';
+            }
+        }
+        
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<p>No results found</p>';
+                return;
+            }
+            
+            let html = `<h3>Found ${results.length} results</h3>`;
+            
+            results.forEach(result => {
+                html += `<div class="result-item">`;
+                
+                if (result.type === 'document') {
+                    html += `
+                        <h4>Document: ${result.filename}</h4>
+                        <p><strong>Score:</strong> ${result.score}</p>
+                        <p><strong>Snippet:</strong> ${result.snippet}</p>
+                        <p><a href="/knowledge/document/${result.id}" target="_blank">Download Document</a></p>
+                    `;
+                } else {
+                    const data = result.data;
+                    html += `
+                        <h4>${data.type || 'Knowledge'}: ${data.summary || 'No summary'}</h4>
+                        <p><strong>Score:</strong> ${result.score}</p>
+                        <p><strong>Added:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
+                    `;
+                    
+                    if (data.query) {
+                        html += `<p><strong>Query:</strong> ${data.query}</p>`;
+                    }
+                    
+                    if (data.response) {
+                        html += `<p><strong>Response:</strong> ${data.response}</p>`;
+                    }
+                    
+                    if (data.content) {
+                        html += `<p><strong>Content:</strong> ${data.content}</p>`;
+                    }
+                }
+                
+                html += `</div>`;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        // Upload document
+        async function uploadDocument() {
+            const fileInput = document.getElementById('document');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a file to upload');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            document.getElementById('uploadLoading').style.display = 'block';
+            
+            try {
+                const response = await fetch('/knowledge/document/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(`Error: ${data.error}`);
+                } else {
+                    alert(`Document "${data.filename}" uploaded successfully!`);
+                    fileInput.value = '';
+                    refreshDocuments();
+                    refreshStats();
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            } finally {
+                document.getElementById('uploadLoading').style.display = 'none';
+            }
+        }
+        
+        // Add knowledge
+        async function addKnowledge() {
+            const type = document.getElementById('knowledgeType').value.trim();
+            const summary = document.getElementById('knowledgeSummary').value.trim();
+            const content = document.getElementById('knowledgeContent').value.trim();
+            
+            if (!summary || !content) {
+                alert('Please provide at least a summary and content');
+                return;
+            }
+            
+            document.getElementById('addLoading').style.display = 'block';
+            
+            try {
+                const response = await fetch('/knowledge/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: type || 'general',
+                        summary,
+                        content
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(`Error: ${data.error}`);
+                } else {
+                    alert('Knowledge added successfully!');
+                    document.getElementById('knowledgeType').value = '';
+                    document.getElementById('knowledgeSummary').value = '';
+                    document.getElementById('knowledgeContent').value = '';
+                    refreshStats();
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            } finally {
+                document.getElementById('addLoading').style.display = 'none';
+            }
+        }
+        
+        // Get statistics
+        async function refreshStats() {
+            document.getElementById('statsLoading').style.display = 'block';
+            
+            try {
+                const response = await fetch('/knowledge/stats');
+                const data = await response.json();
+                
+                if (data.error) {
+                    document.getElementById('stats').innerHTML = `<p>Error: ${data.error}</p>`;
+                } else {
+                    document.getElementById('stats').innerHTML = `
+                        <p><strong>Documents:</strong> ${data.document_count}</p>
+                        <p><strong>Interactions:</strong> ${data.interaction_count}</p>
+                        <p><strong>Storage Size:</strong> ${data.storage_size_kb} KB</p>
+                        <p><strong>Last Updated:</strong> ${new Date(data.last_updated).toLocaleString()}</p>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('stats').innerHTML = `<p>Error: ${error.message}</p>`;
+            } finally {
+                document.getElementById('statsLoading').style.display = 'none';
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshStats();
+        });
+    </script>
+</body>
+</html>

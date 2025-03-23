@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Streaming Speech Agent</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        textarea {
+            width: 300px;
+            height: 100px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #error-message {
+            color: red;
+            margin-top: 10px;
+        }
+        #loading {
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Live Streaming Speech Agent</h1>
+    <textarea id="text" rows="4" cols="50" aria-label="Enter text for speech"></textarea><br>
+    <button onclick="playAudio()" aria-label="Play audio">Play</button>
+    <audio id="audio" controls aria-label="Audio player"></audio>
+    <div id="loading">Generating audio...</div>
+    <div id="error-message"></div>
+    <script>
+        function playAudio() {
+            const text = document.getElementById('text').value;
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('error-message');
+            const audio = document.getElementById('audio');
+
+            loading.style.display = 'block';
+            errorMessage.textContent = '';
+            audio.src = '';
+
+            fetch('/tts', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text: text})
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                audio.src = url;
+                audio.play();
+            })
+            .catch(error => {
+                errorMessage.textContent = 'Error: ' + error.message;
+            })
+            .finally(() => {
+                loading.style.display = 'none';
+            });
+        }
+    </script>
+</body>
+</html>
